@@ -4,7 +4,6 @@ class ScmController {
 
     /*
     TODO:
-     Make a git repo with this
      Create a temp, download the data, read it, deliver it to the frontend and then destroy de file and the folder
      Properly work with defaults if the envs are not set
      Work with private repos
@@ -18,7 +17,8 @@ class ScmController {
     }
 
     def serveScmData() {
-        println "Serving data... ${yamlService.parseIntoJson()}"
-        render yamlService.parseIntoJson()
+//        println "Serving data... ${yamlService.parseIntoJson()}"
+        println scmService.checkFolder()
+        render "Hello world"
     }
 }

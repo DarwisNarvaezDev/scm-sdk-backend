@@ -8,26 +8,38 @@ import org.springframework.beans.factory.annotation.Value
 @Transactional
 class ScmService {
 
-    @Value('${git.scmUrl}')
-    def gitUrlFromConfig
-    @Value('${git.targetFolder}')
-    def gitTargetFolderFromConfig
+    @Value('${git.scmUrl:null}')
+    String gitUrlFromConfig
+    @Value('${git.targetFolder:null}')
+    String gitTargetFolderFromConfig
 
     def checkFolder() {
         try{
-            if( gitUrlFromConfig ){
-                if( gitTargetFolderFromConfig ){
+            println "The url from config ${gitUrlFromConfig}"
+            println "The target folder from config: ${gitTargetFolderFromConfig}"
+
+            if( gitUrlFromConfig != null ){
+                if( gitTargetFolderFromConfig != 'null' ){
                     def destFolder = new File(gitTargetFolderFromConfig)
                     if (destFolder.exists() && destFolder.isDirectory()) {
+                        println "Working with folder: ${destFolder.toString()}"
                         return true
                     } else {
                         return false
                     }
                 }else{
-                    throw new MissingPropertyException('git.targetFolder')
+                    def currentUserHomePath = System.getProperty("user.home")
+                    def tmpPath = 'tmp'
+                    def defaultFolder = new File("${currentUserHomePath}/${tmpPath}")
+                    if( defaultFolder.exists() && defaultFolder.isDirectory() ){
+                        println "Working with a default folder: ${defaultFolder.toString()}"
+                        return true
+                    }else{
+                        throw new Exception("Error with the default folder ${defaultFolder.toString()} is not a path")
+                    }
                 }
             }else{
-                throw new MissingPropertyException("git.scmUrl")
+                throw new Exception("Git SCM URI is not set in app configuration")
             }
         }catch(Exception e){
             println e
@@ -44,7 +56,7 @@ class ScmService {
         }
     }
 
-    def gitClone(String URI, File targetPath){
+    def createFolderAndGitClone(String URI, File targetPath){
         Git git = Git.cloneRepository()
                 .setURI(URI)
                 .setDirectory(targetPath)
@@ -55,12 +67,12 @@ class ScmService {
     def cloneRepositoryToTemp(String URI, File targetPath, boolean deleteAtTheEnd) {
         if( gitUrlFromConfig && gitTargetFolderFromConfig ){
             def targetFile = new File(gitTargetFolderFromConfig)
-            gitClone(gitUrlFromConfig, targetFile)
+            createFolderAndGitClone(gitUrlFromConfig, targetFile)
             if( deleteAtTheEnd ){
                 deleteFolder(targetFile)
             }
         }else{
-            gitClone(URI, targetPath)
+            createFolderAndGitClone(URI, targetPath)
             if( deleteAtTheEnd ){
                 deleteFolder(targetPath)
             }
