@@ -2,7 +2,7 @@
 git:
     scmUrl: 'https://github.com/DarwisNarvaezDev/ScmSdkYaml.git'
     targetFolder: '/home/darwis/tmp/scmSdk'
-    authToken: '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'
+    authToken: '<token>'
 
 files:
     yamlFileName: 'components.yaml'
