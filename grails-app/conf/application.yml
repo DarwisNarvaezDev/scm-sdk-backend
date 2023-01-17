@@ -2,7 +2,7 @@
 git:
     scmUrl: 'https://github.com/DarwisNarvaezDev/ScmSdkYaml.git'
     targetFolder: '/home/darwis/tmp/scmSdk'
-    authToken: '<token>'
+    authToken: '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'
 
 files:
     yamlFileName: 'components.yaml'
@@ -11,6 +11,8 @@ grails:
     profile: web
     codegen:
         defaultPackage: scm.sdk.backend
+    cors:
+        enabled: true
     gorm:
         reactor:
             # Whether to translate GORM events into Reactor events

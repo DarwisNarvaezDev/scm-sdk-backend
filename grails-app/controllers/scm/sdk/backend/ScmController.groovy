@@ -1,5 +1,7 @@
 package scm.sdk.backend
 
+import grails.converters.JSON
+
 class ScmController {
 
     /*
@@ -15,22 +17,41 @@ class ScmController {
     }
 
     def serveScmData() {
-        // Get from user if we destroy the folder and its files after the SCM
-        println "destroy scm folder? ${params.destroyFolder}"
         // Clone the repo into path
         def result = scmService.cloneRepositoryToTemp()
         if( result ){
-            if( 'Success' != result.results ){
-                if( result.results.contains("Authentication") || result.results.contains("authorized") ){
-                    render "You are trying to access a private repo, please provide the property 'git.authToken'"
+            if( 'Success' != result.results ) {
+                if (result.results.contains("Authentication") || result.results.contains("authorized")) {
+                    def message = "You are trying to access a private repo, please provide the property 'git.authToken'"
+                    render(contentType: 'application.json', text:
+                            (
+                                    [message: message]
+                            ) as JSON)
+                } else if (result.results.contains("origin") || result.results.contains("remote")){
+                    def message = "Did you provide an URL via configuration? prop: 'git.scmUrl'"
+                    render(contentType: 'application.json', text:
+                            (
+                                    [message: message]
+                            ) as JSON)
                 }else{
-                    render result.results
+                    println result.results
+                    render(contentType: 'application.json', text: (result.results) as JSON)
                 }
-            }else{
-                render yamlService.parseIntoJson()
+            }else {
+                render(
+                        contentType: 'application/json', text:
+                        (
+                                [
+                                        yaml: yamlService.parseIntoJson(),
+                                ]
+                        ) as JSON
+                )
             }
         }else{
-            flash.error = "An error occurred in controller"
+            render(contentType: 'application.json', text:
+                    (
+                            [message: result.results]
+                    ) as JSON)
         }
     }
 }
