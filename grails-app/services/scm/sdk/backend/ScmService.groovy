@@ -3,80 +3,79 @@ package scm.sdk.backend
 import grails.gorm.transactions.Transactional
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.springframework.beans.factory.annotation.Value
+
+import javax.annotation.PostConstruct
 
 @Transactional
 class ScmService {
 
     @Value('${git.scmUrl:null}')
-    String gitUrlFromConfig
+    String gitUri
     @Value('${git.targetFolder:null}')
-    String gitTargetFolderFromConfig
+    String gitTargetFolder
+    @Value('${git.authToken:null}')
+    String gitAuthToken
 
-    def checkFolder() {
+    @PostConstruct
+    def init() {
+        if (gitUri == null) {
+            throw new MissingPropertyException("The URI to the Git SCM repo must be set")
+        }
+        if (gitTargetFolder == 'null') {
+            def currentUserHomePath = System.getProperty("user.home")
+            def tmpPath = 'tmp'
+            def defaultTargetFolder = 'destroy'
+            gitTargetFolder = "${currentUserHomePath}/${tmpPath}/${defaultTargetFolder}"
+        }
+    }
+
+    def deleteFolder() {
+        def scmTargetFolder = new File(gitTargetFolder)
+        FileUtils.deleteDirectory(scmTargetFolder)
+    }
+
+    def createFolderAndGitClone(String URI, File targetPath) {
+        def gitTokenEmpty = 'null' == gitAuthToken
         try{
-            println "The url from config ${gitUrlFromConfig}"
-            println "The target folder from config: ${gitTargetFolderFromConfig}"
-
-            if( gitUrlFromConfig != null ){
-                if( gitTargetFolderFromConfig != 'null' ){
-                    def destFolder = new File(gitTargetFolderFromConfig)
-                    if (destFolder.exists() && destFolder.isDirectory()) {
-                        println "Working with folder: ${destFolder.toString()}"
-                        return true
-                    } else {
-                        return false
-                    }
-                }else{
-                    def currentUserHomePath = System.getProperty("user.home")
-                    def tmpPath = 'tmp'
-                    def defaultFolder = new File("${currentUserHomePath}/${tmpPath}")
-                    if( defaultFolder.exists() && defaultFolder.isDirectory() ){
-                        println "Working with a default folder: ${defaultFolder.toString()}"
-                        return true
-                    }else{
-                        throw new Exception("Error with the default folder ${defaultFolder.toString()} is not a path")
-                    }
-                }
+            if( targetPath.exists() && targetPath.isDirectory() ){
+                deleteFolder()
+            }
+            if( gitTokenEmpty ){
+                return getGitRepo(URI, targetPath)
             }else{
-                throw new Exception("Git SCM URI is not set in app configuration")
+                return getGitRepo(URI, targetPath, true)
             }
         }catch(Exception e){
-            println e
+            return [gitObject: null, results: e.toString()]
         }
     }
 
-    def deleteFolder(String folder = null) {
-        if( gitTargetFolderFromConfig ){
-            def scmTargetFolder = new File(gitTargetFolderFromConfig)
-            FileUtils.deleteDirectory(scmTargetFolder)
-        }else{
-            def scmTargetFolder = new File(folder)
-            FileUtils.deleteDirectory(scmTargetFolder)
-        }
-    }
-
-    def createFolderAndGitClone(String URI, File targetPath){
-        Git git = Git.cloneRepository()
-                .setURI(URI)
-                .setDirectory(targetPath)
-                .call();
-    }
-
-    @Transactional
-    def cloneRepositoryToTemp(String URI, File targetPath, boolean deleteAtTheEnd) {
-        if( gitUrlFromConfig && gitTargetFolderFromConfig ){
-            def targetFile = new File(gitTargetFolderFromConfig)
-            createFolderAndGitClone(gitUrlFromConfig, targetFile)
-            if( deleteAtTheEnd ){
-                deleteFolder(targetFile)
+    def getGitRepo(String URI, File targetPath, boolean withToken = false){
+        try{
+            if( withToken ){
+                Git git = Git.cloneRepository()
+                        .setURI(URI)
+                        .setDirectory(targetPath)
+                        .setCredentialsProvider(new UsernamePasswordCredentialsProvider("token", gitAuthToken))
+                        .call()
+                return [gitObject: git, results: 'Success']
+            }else{
+                Git git = Git.cloneRepository()
+                        .setURI(URI)
+                        .setDirectory(targetPath)
+                        .call()
+                return [gitObject: git, results: 'Success']
             }
-        }else{
-            createFolderAndGitClone(URI, targetPath)
-            if( deleteAtTheEnd ){
-                deleteFolder(targetPath)
-            }
+        }catch(Exception e){
+            return [gitObject: null, results: e.toString()]
         }
+    }
+
+    def cloneRepositoryToTemp() {
+        def targetFile = new File(gitTargetFolder)
+        createFolderAndGitClone(gitUri, targetFile)
     }
 
 }

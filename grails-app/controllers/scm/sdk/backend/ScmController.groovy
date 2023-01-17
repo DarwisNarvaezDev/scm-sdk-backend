@@ -4,8 +4,6 @@ class ScmController {
 
     /*
     TODO:
-     Create a temp, download the data, read it, deliver it to the frontend and then destroy de file and the folder
-     Properly work with defaults if the envs are not set
      Work with private repos
     * */
 
@@ -17,8 +15,23 @@ class ScmController {
     }
 
     def serveScmData() {
-//        println "Serving data... ${yamlService.parseIntoJson()}"
-        println scmService.checkFolder()
-        render "Hello world"
+        // Get from user if we destroy the folder and its files after the SCM
+        println "destroy scm folder? ${params.destroyFolder}"
+        // Clone the repo into path
+        println "Get: ${scmService.gitTargetFolder}/${yamlService.getFilename()}"
+        def result = scmService.cloneRepositoryToTemp()
+        if( result ){
+            if( 'Success' != result.results ){
+                if( result.results.contains("Authentication") ){
+                    render "You are trying to access a private repo, please provide the property 'git.authToken'"
+                }else{
+                    render result.results
+                }
+            }else{
+                render yamlService.parseIntoJson()
+            }
+        }else{
+            flash.error = "An error occurred in controller"
+        }
     }
 }
