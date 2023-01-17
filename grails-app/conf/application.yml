@@ -1,7 +1,7 @@
 ---
 git:
-    scmUrl: 'https://github.com/DarwisNarvaezDev/ScmSdkYaml.git'
-    targetFolder: '/home/darwis/tmp/scmSdk'
+    scmUrl: '<SCMrepo>'
+    targetFolder: '<targetFolder>'
     authToken: '<token>'
 
 files:

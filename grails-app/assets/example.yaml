@@ -1,0 +1,8 @@
+components:
+  component:
+    -
+      height: 500px
+      width: 500px
+      bg: black
+      borderRadius: 5px
+      content: Hello World
